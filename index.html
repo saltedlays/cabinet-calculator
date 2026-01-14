@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cabinet Price Calculator</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        label { display: block; margin-top: 20px; }
+        select { width: 100%; padding: 10px; }
+        #result { margin-top: 30px; font-size: 18px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Cabinet Price Calculator</h1>
+    
+    <label for="cabinetType">Select Cabinet Type:</label>
+    <select id="cabinetType">
+        <option value="">-- Select --</option>
+    </select>
+    
+    <label for="subvariant">Select Variant:</label>
+    <select id="subvariant" disabled>
+        <option value="">-- Select Cabinet Type First --</option>
+    </select>
+    
+    <label for="hvac">Select HVAC:</label>
+    <select id="hvac" disabled>
+        <option value="">-- Select Variant First --</option>
+        <option value="DC Aircon">DC Aircon</option>
+        <option value="DC Fan">DC Fan</option>
+        <option value="Heat Exchanger(HEX)">Heat Exchanger(HEX)</option>
+    </select>
+    
+    <label for="capacity" id="capacityLabel" style="display: none;">Select Capacity:</label>
+    <select id="capacity" disabled style="display: none;">
+        <option value="">-- Select --</option>
+    </select>
+    
+    <div id="result"></div>
+
+    <script>
+        const majorTypes = [
+            {
+                name: "Standard Battery Cabinet",
+                subvariants: ["400AH", "600AH", "800AH", "1000AH"],
+                priceIndicesAir: [2, 3, 4, 5],
+                priceIndicesFan: [6, 7, 8, 9]
+            },
+            {
+                name: "Stackable Battery Cabinet",
+                subvariants: ["400AH", "800AH"],
+                priceIndicesAir: [10, 11],
+                priceIndicesFan: [12, 13]
+            },
+            {
+                name: "Power Cabinet",
+                subvariants: ["Integrated Power Cabinet - Single Door", "Integrated Power Cabinet- 2 Door", "Integrated Power Cabinet- 3 Door"],
+                priceIndices: [14, 15, 16]
+            },
+            {
+                name: "FTTH Cabinet",
+                subvariants: ["NayaTel", "PTCL", "Super Net"],
+                priceIndices: [17, 18, 19]
+            },
+            {
+                name: "IP Router Cabinets",
+                subvariants: ["Type 2", "Type 1", "Type 4"],
+                priceIndices: [20, 21, 22]
+            },
+            {
+                name: "Server Rack / Switch Rack",
+                subvariants: ["42U", "36U", "16U"],
+                priceIndices: [23, 24, 25]
+            },
+            {
+                name: "Theft Resistant Cabinet Battery Cabinet",
+                subvariants: ["600 AH", "1000AH"],
+                priceIndicesAir: [26, 27],
+                priceIndicesFan: [28, 29]
+            },
+            {
+                name: "Theft Resistant Cabinet Integrated Cabinet",
+                subvariants: ["600AH + Power System"],
+                priceIndices: [30]
+            }
+        ];
+
+        const cabinetPrices = [
+            0, // 0
+            0, // 1
+            649.3972085167984, // 2
+            706.444140659871, // 3
+            842.3487721414641, // 4
+            904.5162064459055, // 5
+            613.452912720912, // 6
+            653.9760355469771, // 7
+            758.3445740595532, // 8
+            814.0646038160726, // 9
+            610.4885489675694, // 10
+            799.5388447232442, // 11
+            610.4885489675694, // 12
+            799.5388447232442, // 13
+            420899.89, // 14
+            420899.89, // 15
+            420899.89, // 16
+            420899.89, // 17
+            420899.89, // 18
+            420899.89, // 19
+            420899.89, // 20
+            420899.89, // 21
+            420899.89, // 22
+            420899.89, // 23
+            420899.89, // 24
+            420899.89, // 25
+            420899.89, // 26
+            420899.89, // 27
+            420899.89, // 28
+            420899.89, // 29
+            420899.89  // 30
+        ];
+
+        const airconCapacities = [
+            { capacity: "300 Watt", price: 305.019 },
+            { capacity: "600 Watt", price: 446.9267 },
+            { capacity: "1000 Watt", price: 608.3 },
+            { capacity: "1500 Watt", price: 660.44 },
+            { capacity: "2000 Watt", price: 790.79 },
+            { capacity: "3000 Watt", price: 964.59 }
+        ];
+
+        const hexCapacities = [
+            { capacity: "60W/K", price: 321.53 },
+            { capacity: "80W/K", price: 387.574 },
+            { capacity: "120W/K", price: 469.26 },
+            { capacity: "180W/K", price: 634.37 },
+            { capacity: "200W/K", price: 677.82 },
+            { capacity: "250W/K", price: 895.07 }
+        ];
+
+        // Populate cabinet types
+        const typeSelect = document.getElementById('cabinetType');
+        majorTypes.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type.name;
+            option.textContent = type.name;
+            typeSelect.appendChild(option);
+        });
+
+        typeSelect.addEventListener('change', () => {
+            const selectedTypeName = typeSelect.value;
+            const selectedType = majorTypes.find(t => t.name === selectedTypeName);
+            const subSelect = document.getElementById('subvariant');
+            subSelect.innerHTML = '<option value="">-- Select --</option>';
+            if (selectedType) {
+                selectedType.subvariants.forEach(sub => {
+                    const option = document.createElement('option');
+                    option.value = sub;
+                    option.textContent = sub;
+                    subSelect.appendChild(option);
+                });
+                subSelect.disabled = false;
+            } else {
+                subSelect.disabled = true;
+            }
+            document.getElementById('hvac').disabled = true;
+            hideCapacity();
+            updateResult();
+        });
+
+        document.getElementById('subvariant').addEventListener('change', () => {
+            document.getElementById('hvac').disabled = false;
+            hideCapacity();
+            updateResult();
+        });
+
+        document.getElementById('hvac').addEventListener('change', () => {
+            const hvac = document.getElementById('hvac').value;
+            const capacitySelect = document.getElementById('capacity');
+            const capacityLabel = document.getElementById('capacityLabel');
+            capacitySelect.innerHTML = '<option value="">-- Select --</option>';
+            if (hvac === 'DC Aircon') {
+                airconCapacities.forEach(cap => {
+                    const option = document.createElement('option');
+                    option.value = cap.price;
+                    option.textContent = cap.capacity;
+                    capacitySelect.appendChild(option);
+                });
+                showCapacity();
+            } else if (hvac === 'Heat Exchanger(HEX)') {
+                hexCapacities.forEach(cap => {
+                    const option = document.createElement('option');
+                    option.value = cap.price;
+                    option.textContent = cap.capacity;
+                    capacitySelect.appendChild(option);
+                });
+                showCapacity();
+            } else {
+                hideCapacity();
+            }
+            updateResult();
+        });
+
+        document.getElementById('capacity').addEventListener('change', updateResult);
+
+        function showCapacity() {
+            document.getElementById('capacityLabel').style.display = 'block';
+            document.getElementById('capacity').style.display = 'block';
+            document.getElementById('capacity').disabled = false;
+        }
+
+        function hideCapacity() {
+            document.getElementById('capacityLabel').style.display = 'none';
+            document.getElementById('capacity').style.display = 'none';
+            document.getElementById('capacity').disabled = true;
+        }
+
+        function updateResult() {
+            const typeName = document.getElementById('cabinetType').value;
+            const sub = document.getElementById('subvariant').value;
+            const hvac = document.getElementById('hvac').value;
+            const capPrice = parseFloat(document.getElementById('capacity').value) || 0;
+
+            if (!typeName || !sub || !hvac) {
+                document.getElementById('result').textContent = '';
+                return;
+            }
+
+            const type = majorTypes.find(t => t.name === typeName);
+            const subIndex = type.subvariants.indexOf(sub);
+
+            let cabinetCol;
+            if (hvac === 'DC Fan') {
+                if (type.priceIndicesFan) {
+                    cabinetCol = type.priceIndicesFan[subIndex];
+                } else if (type.priceIndicesAir) {
+                    cabinetCol = type.priceIndicesAir[subIndex]; // fallback if no fan specific
+                } else {
+                    cabinetCol = type.priceIndices[subIndex];
+                }
+                var hvacPrice = 0;
+            } else {
+                if (type.priceIndicesAir) {
+                    cabinetCol = type.priceIndicesAir[subIndex];
+                } else {
+                    cabinetCol = type.priceIndices ? type.priceIndices[subIndex] : undefined;
+                }
+                var hvacPrice = capPrice;
+            }
+
+            if (cabinetCol === undefined) {
+                document.getElementById('result').textContent = 'Error: Invalid selection';
+                return;
+            }
+
+            const cabinetPrice = cabinetPrices[cabinetCol];
+            const total = cabinetPrice + hvacPrice;
+            document.getElementById('result').textContent = `Final Price: $${total.toFixed(2)} USD`;
+        }
+    </script>
+</body>
+</html>
